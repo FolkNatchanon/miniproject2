@@ -33,9 +33,8 @@ export default function App() {
   useLocalStorageObject<PersistShape>(STORAGE_KEY, { items, filter, sortBy, query }, [items, filter, sortBy, query]);
 
   useEffect(() => {
-    const total = items.reduce((acc, it) => acc + it.qty * it.cost, 0);
-    document.title = `${formatCurrency(total)} • Mini Inventory`;
-  }, [items]);
+    document.title = `Stock Management | กลุ่มใจจริงๆ`;
+  }, []);
 
   // actions
   function add(item: Item) { setItems((prev) => [item, ...prev]); }

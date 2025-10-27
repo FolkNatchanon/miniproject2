@@ -212,3 +212,19 @@ body {
   color: var(--muted);
   background: var(--bg-soft);
 }
+
+/* 🌙 Dark theme override */
+html.dark {
+  --bg: #0f172a;
+  --bg-soft: #1e293b;
+  --bg-softer: #334155;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+
+  --accent: #3b82f6;
+  --accent-dark: #1d4ed8;
+
+  --danger: #ef4444;
+  --danger-dark: #991b1b;
+  --warn: #facc15;
+}
