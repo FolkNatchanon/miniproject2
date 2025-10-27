@@ -44,22 +44,7 @@ export default function App() {
   function remove(id: string) { setItems((prev) => prev.filter((it) => it.id !== id)); }
   function edit(id: string, next: Partial<Item>) { setItems((prev) => prev.map((it) => it.id === id ? { ...it, ...next } : it)); }
   function clearAll() { if (confirm('ลบทั้งหมด?')) setItems([]); }
-  function importJSON(text: string) {
-    try {
-      const parsed = JSON.parse(text) as Item[];
-      const mapped = parsed.map((p) => ({ ...p, id: uid() }));
-      setItems((prev) => [...mapped, ...prev]);
-    } catch {
-      alert('ไฟล์ไม่ถูกต้อง');
-    }
-  }
-  function exportJSON() {
-    const blob = new Blob([JSON.stringify(items, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'inventory.json'; a.click();
-    URL.revokeObjectURL(url);
-  }
+
 
   // derived
   const view = useMemo(() => {
@@ -82,8 +67,7 @@ export default function App() {
   return (
     <div style={{ minHeight: '100svh' }}>
       <div className="container">
-        <h1 className="h1">Mini Inventory</h1>
-        <p className="muted">จัดการสต็อกง่ายๆ — บันทึกในเครื่อง (localStorage)</p>
+        <h1 className="h1">Stock Management</h1>
 
         <ItemForm onAdd={add} />
 
@@ -108,26 +92,6 @@ export default function App() {
             <option value="cost">ต้นทุน/หน่วย</option>
             <option value="value">มูลค่ารวม</option>
           </select>
-
-          <div className="row" style={{ gap: 8 }}>
-            <button onClick={exportJSON} className="btn">Export JSON</button>
-            <label className="btn" style={{ cursor: 'pointer' }}>
-              Import JSON
-              <input
-                type="file"
-                accept="application/json"
-                style={{ display: 'none' }}
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (!f) return;
-                  const r = new FileReader();
-                  r.onload = () => importJSON(String(r.result));
-                  r.readAsText(f);
-                }}
-              />
-            </label>
-            <button onClick={clearAll} className="btn danger">ลบทั้งหมด</button>
-          </div>
         </div>
 
         <div style={{ marginTop: 8 }}>

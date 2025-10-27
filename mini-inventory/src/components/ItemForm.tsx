@@ -35,47 +35,67 @@ export default function ItemForm({ onAdd }: Props) {
     <form
       onSubmit={submit}
       className="grid"
-      style={{ gap: 8, gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}
+      style={{ gap: 12, gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', alignItems: 'end' }}
     >
-      <input
-        className="input"
-        placeholder="ชื่อสินค้า"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
-      <input
-        className="input"
-        type="number"
-        min={0}
-        placeholder="จำนวน"
-        value={qty}
-        onChange={(e) => setQty(parseInt(e.target.value || '0', 10))}
-      />
-      <input
-        className="input"
-        placeholder="หน่วย"
-        value={unit}
-        onChange={(e) => setUnit(e.target.value)}
-      />
-      <input
-        className="input"
-        type="number"
-        min={0}
-        placeholder="ต้นทุน/หน่วย"
-        value={cost}
-        onChange={(e) => setCost(parseInt(e.target.value || '0', 10))}
-      />
-      <div className="row">
+      <div>
+        <label className="small">ชื่อสินค้า</label>
+        <input
+          className="input"
+          placeholder="เช่น น้ำดื่ม, เสื้อชูชีพ"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+      </div>
+
+      <div>
+        <label className="small">จำนวน</label>
         <input
           className="input"
           type="number"
           min={0}
-          placeholder="เตือนเมื่อเหลือ…"
-          value={lowAt}
-          onChange={(e) => setLowAt(parseInt(e.target.value || '0', 10))}
+          placeholder="0"
+          value={qty}
+          onChange={(e) => setQty(parseInt(e.target.value || '0', 10))}
         />
-        <button className="btn primary">เพิ่ม</button>
+      </div>
+
+      <div>
+        <label className="small">หน่วย</label>
+        <input
+          className="input"
+          placeholder="กล่อง, ขวด, ถุง"
+          value={unit}
+          onChange={(e) => setUnit(e.target.value)}
+        />
+      </div>
+
+      <div>
+        <label className="small">ต้นทุนต่อหน่วย (บาท)</label>
+        <input
+          className="input"
+          type="number"
+          min={0}
+          placeholder="0"
+          value={cost}
+          onChange={(e) => setCost(parseInt(e.target.value || '0', 10))}
+        />
+      </div>
+
+      <div>
+        <label className="small">เตือนเมื่อเหลือ ≤</label>
+        <div className="row">
+          <input
+            className="input"
+            type="number"
+            min={0}
+            placeholder="5"
+            value={lowAt}
+            onChange={(e) => setLowAt(parseInt(e.target.value || '0', 10))}
+          />
+          <button className="btn primary">เพิ่ม</button>
+        </div>
       </div>
     </form>
   );
+
 }
