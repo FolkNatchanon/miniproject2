@@ -228,3 +228,8 @@ html.dark {
   --danger-dark: #991b1b;
   --warn: #facc15;
 }
+
+.row-item.out {
+  border-color: var(--danger);
+  background: #ffe9e9;
+}

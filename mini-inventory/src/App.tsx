@@ -1,101 +1,132 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { Item, Filter, SortKey } from './types';
-import { formatCurrency, uid } from './utils/storage';
-import { useLocalStorageObject } from './hooks/useLocalStorageObject';
-import ItemForm from './components/ItemForm';
-import ItemRow from './components/ItemRow';
-import Summary from './components/Summary';
-import './styles.css';
-
-const STORAGE_KEY = 'mini-inventory-v1';
-
-type PersistShape = { items: Item[]; filter: Filter; sortBy: SortKey; query: string };
+import { useEffect, useMemo, useState } from "react";
+import type { Filter, Item, SortKey } from "./types";
+import ItemForm from "./components/ItemForm";
+import ItemRow from "./components/ItemRow";
+import Summary from "./components/Summary";
+import AuthBox from "./components/AuthBox";
+import { authApi, itemsApi } from "./api";
+import "./styles.css";
 
 export default function App() {
-  const [items, setItems] = useState<Item[]>(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    try { return (JSON.parse(raw) as PersistShape).items ?? []; } catch { return []; }
-  });
-  const [filter, setFilter] = useState<Filter>(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    try { return raw ? (JSON.parse(raw) as PersistShape).filter ?? 'all' : 'all'; } catch { return 'all'; }
-  });
-  const [sortBy, setSortBy] = useState<SortKey>(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    try { return raw ? (JSON.parse(raw) as PersistShape).sortBy ?? 'name' : 'name'; } catch { return 'name'; }
-  });
-  const [query, setQuery] = useState<string>(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    try { return raw ? (JSON.parse(raw) as PersistShape).query ?? '' : ''; } catch { return ''; }
-  });
+  const [user, setUser] = useState<{ id: string; username: string } | null>(null);
+  const [items, setItems] = useState<Item[]>([]);
+  const [filter, setFilter] = useState<Filter>("all");
+  const [sortBy, setSortBy] = useState<SortKey>("name");
+  const [query, setQuery] = useState("");
 
-  useLocalStorageObject<PersistShape>(STORAGE_KEY, { items, filter, sortBy, query }, [items, filter, sortBy, query]);
-
+  // 1) เช็ก login
   useEffect(() => {
-    document.title = `Stock Management | กลุ่มใจจริงๆ`;
+    authApi
+      .me()
+      .then((u) => setUser(u))
+      .catch(() => setUser(null));
   }, []);
 
-  // actions
-  function add(item: Item) { setItems((prev) => [item, ...prev]); }
-  function inc(id: string) { setItems((prev) => prev.map((it) => it.id === id ? { ...it, qty: it.qty + 1 } : it)); }
-  function dec(id: string) { setItems((prev) => prev.map((it) => it.id === id ? { ...it, qty: Math.max(0, it.qty - 1) } : it)); }
-  function remove(id: string) { setItems((prev) => prev.filter((it) => it.id !== id)); }
-  function edit(id: string, next: Partial<Item>) { setItems((prev) => prev.map((it) => it.id === id ? { ...it, ...next } : it)); }
-  function clearAll() { if (confirm('ลบทั้งหมด?')) setItems([]); }
+  // 2) โหลด items หลังจาก login
+  useEffect(() => {
+    if (!user) return;
+    itemsApi
+      .list()
+      .then(setItems)
+      .catch((e) => alert(e.message));
+  }, [user]);
 
+  async function onLogout() {
+    await authApi.logout();
+    setUser(null);
+    setItems([]);
+  }
 
-  // derived
+  async function add(item: Item) {
+    const { id: _drop, ...payload } = item; // id เดิมทิ้ง ให้ DB ออก id ใหม่
+    const created = await itemsApi.create(payload);
+    setItems((p) => [created, ...p]);
+  }
+
+  async function inc(id: string) {
+    const found = items.find((x) => x.id === id);
+    if (!found) return;
+    const updated = await itemsApi.patch(id, { qty: found.qty + 1 });
+    setItems((p) => p.map((it) => (it.id === id ? updated : it)));
+  }
+
+  async function dec(id: string) {
+    const found = items.find((x) => x.id === id);
+    if (!found) return;
+    const updated = await itemsApi.patch(id, { qty: Math.max(0, found.qty - 1) });
+    setItems((p) => p.map((it) => (it.id === id ? updated : it)));
+  }
+
+  async function remove(id: string) {
+    await itemsApi.remove(id);
+    setItems((p) => p.filter((it) => it.id !== id));
+  }
+
+  async function edit(id: string, next: Partial<Item>) {
+    const updated = await itemsApi.patch(id, next);
+    setItems((p) => p.map((it) => (it.id === id ? updated : it)));
+  }
+
   const view = useMemo(() => {
     let list = items;
+
     const q = query.trim().toLowerCase();
     if (q) list = list.filter((it) => it.name.toLowerCase().includes(q));
-    if (filter === 'low') list = list.filter((it) => it.qty <= it.lowAt);
-    if (filter === 'in') list = list.filter((it) => it.qty > it.lowAt);
+
+    if (filter === "low") list = list.filter((it) => it.qty <= it.lowAt);
+    if (filter === "in") list = list.filter((it) => it.qty > it.lowAt);
 
     list = [...list].sort((a, b) => {
-      if (sortBy === 'name') return a.name.localeCompare(b.name);
-      if (sortBy === 'qty') return b.qty - a.qty;
-      if (sortBy === 'cost') return b.cost - a.cost;
-      const va = a.qty * a.cost, vb = b.qty * b.cost;
-      return vb - va;
+      if (sortBy === "name") return a.name.localeCompare(b.name);
+      if (sortBy === "qty") return b.qty - a.qty;
+      if (sortBy === "cost") return b.cost - a.cost;
+      return b.qty * b.cost - a.qty * a.cost;
     });
+
     return list;
   }, [items, filter, sortBy, query]);
 
+  // ถ้ายังไม่ login -> show auth
+  if (!user) {
+    return <AuthBox onAuthed={(u) => setUser(u)} />;
+  }
+
   return (
-    <div style={{ minHeight: '100svh' }}>
+    <div style={{ minHeight: "100svh" }}>
       <div className="container">
-        <h1 className="h1">Stock Management</h1>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+          <h1 className="h1">Stock Management</h1>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <div className="badge">👤 {user.username}</div>
+            <button className="btn btn-ghost" onClick={onLogout}>Logout</button>
+          </div>
+        </div>
 
         <ItemForm onAdd={add} />
 
-        <div className="row wrap" style={{ alignItems: 'stretch', marginTop: 12, gap: 8 }}>
+        <div className="controls">
           <input
+            className="input"
+            placeholder="ค้นหาชื่อสินค้า..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="ค้นหา…"
-            className="input"
-            style={{ flex: 1 }}
           />
 
-          <select value={filter} onChange={(e) => setFilter(e.target.value as Filter)} className="select">
+          <select className="select" value={filter} onChange={(e) => setFilter(e.target.value as Filter)}>
             <option value="all">ทั้งหมด</option>
+            <option value="in">ปกติ</option>
             <option value="low">ใกล้หมด</option>
-            <option value="in">มีเพียงพอ</option>
           </select>
 
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortKey)} className="select">
-            <option value="name">ชื่อ</option>
-            <option value="qty">จำนวน</option>
-            <option value="cost">ต้นทุน/หน่วย</option>
-            <option value="value">มูลค่ารวม</option>
+          <select className="select" value={sortBy} onChange={(e) => setSortBy(e.target.value as SortKey)}>
+            <option value="name">เรียงชื่อ</option>
+            <option value="qty">เรียงจำนวน</option>
+            <option value="cost">เรียงต้นทุน</option>
+            <option value="value">เรียงมูลค่า</option>
           </select>
         </div>
 
-        <div style={{ marginTop: 8 }}>
-          <Summary items={items} />
-        </div>
+        <Summary items={view} />
 
         <div className="table" style={{ marginTop: 8 }}>
           {view.map((it) => (
@@ -108,6 +139,7 @@ export default function App() {
               onEdit={(next) => edit(it.id, next)}
             />
           ))}
+
           {view.length === 0 && <div className="hr-dash center">ไม่พบรายการ</div>}
         </div>
       </div>

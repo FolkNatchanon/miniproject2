@@ -28,10 +28,11 @@ export default function ItemRow({ item, onInc, onDec, onDelete, onEdit }: Props)
   }
 
   const isLow = item.qty <= item.lowAt;
+  const isOut = item.qty === 0; // ✅ เพิ่ม: หมดสต๊อก
   const value = item.qty * item.cost;
 
   return (
-    <div className={`row-item ${isLow ? 'low' : ''}`}>
+    <div className={`row-item ${isOut ? 'out' : isLow ? 'low' : ''}`}>
       {editing ? (
         <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
@@ -41,6 +42,7 @@ export default function ItemRow({ item, onInc, onDec, onDelete, onEdit }: Props)
         <div>
           <div style={{ fontWeight: 600 }}>{item.name}</div>
           <div className="small">หน่วย: {item.unit} • เกณฑ์เตือน: ≤ {item.lowAt}</div>
+          {isOut && <div className="small" style={{ fontWeight: 700 }}>❗ หมดสต๊อก</div>}
         </div>
       )}
 
