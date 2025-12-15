@@ -9,7 +9,7 @@ interface Props {
 export default function ItemForm({ onAdd }: Props) {
   const [name, setName] = useState('');
   const [qty, setQty] = useState<number>(1);
-  const [unit, setUnit] = useState('กล่อง');
+  const [unit, setUnit] = useState('');
   const [cost, setCost] = useState<number>(0);
   const [lowAt, setLowAt] = useState<number>(5);
 
@@ -26,7 +26,7 @@ export default function ItemForm({ onAdd }: Props) {
     });
     setName('');
     setQty(1);
-    setUnit('กล่อง');
+    setUnit('');
     setCost(0);
     setLowAt(5);
   }
@@ -41,7 +41,7 @@ export default function ItemForm({ onAdd }: Props) {
         <label className="small">ชื่อสินค้า</label>
         <input
           className="input"
-          placeholder="เช่น น้ำดื่ม, เสื้อชูชีพ"
+          placeholder="กรุณากรอกข้อมูลสินค้า"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
